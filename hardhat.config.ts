@@ -37,7 +37,7 @@ const config: HardhatUserConfig = {
       accounts: [`0x${privateKey}`],
     },
     holesky_testnet: {
-      url: "https://ethereum-holesky-rpc.publicnode.com",
+      url: `https://holesky.infura.io/v3/${infuraKey}`,
       accounts: [`0x${privateKey}`],
     },
     hardhat: {

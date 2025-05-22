@@ -1,0 +1,58 @@
+body {
+  background-color: #f8f9fa;
+  font-family: 'Arial', sans-serif;
+}
+
+.container {
+  max-width: 960px;
+}
+
+.card {
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.info-box {
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  height: 100%;
+}
+
+.progress {
+  height: 20px;
+  border-radius: 10px;
+}
+
+#connect-wallet {
+  background-color: #4e54c8;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+#connect-wallet:hover {
+  background-color: #3f43a1;
+  transform: scale(1.05);
+}
+
+#buy-tokens {
+  background-color: #28a745;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+#buy-tokens:hover {
+  background-color: #218838;
+  transform: scale(1.05);
+}
+
+footer {
+  color: #6c757d;
+  font-size: 0.9rem;
+} 
