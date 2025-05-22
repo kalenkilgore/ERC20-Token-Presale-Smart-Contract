@@ -108,7 +108,7 @@ contract Presale is Pausable, ReentrancyGuard {
         uint256 timestamp
     );
 
-    /// @dev event for claimaing tokens
+    /// @dev event for claiming tokens
     event TokensClaimed(address indexed caller, uint256 indexed tokenAmount);
 
     /// @dev event for updating wallet address for withdrawing contract balance
@@ -354,11 +354,11 @@ contract Presale is Pausable, ReentrancyGuard {
             "Invalid time for buying the token"
         );
 
-        //Private code to calculate estimated token amount and available coin amount
-
+        uint256 tokensAvailable = presaleSupply - totalTokensSold;
+        uint256 estimatedTokenAmount = estimatedTokenAmountAvailableWithETH(msg.value);
         require(
-            _estimatedTokenAmount <= _tokensAvailable &&
-                _estimatedTokenAmount > 0,
+            estimatedTokenAmount <= tokensAvailable &&
+                estimatedTokenAmount > 0,
             "Invalid token amount to buy"
         );
 
@@ -366,8 +366,8 @@ contract Presale is Pausable, ReentrancyGuard {
 
         emit TokensBought(
             msg.sender,
-            _tokenAmount,
-            _usdtAmount,
+            estimatedTokenAmount,
+            msg.value,
             block.timestamp
         );
     }
@@ -446,9 +446,8 @@ contract Presale is Pausable, ReentrancyGuard {
             "Can not claim as softcap not reached. Instead you can be refunded."
         );
 
-        // Private code that Users can claim their tokens after the presale ends
-
-        emit TokensClaimed(investor_, _tokenAmountforUser);
+        uint256 tokenAmountForUser = investorTokenBalance[investor_];
+        emit TokensClaimed(investor_, tokenAmountForUser);
     }
 
     /**
