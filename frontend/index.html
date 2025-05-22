@@ -10,7 +10,7 @@
 <body>
   <div class="container">
     <header class="text-center my-5">
-      <h1>ECT Token Presale</h1>
+      <h1>KITTY Token Presale</h1>
       <p class="lead">Participate in our presale and be an early investor!</p>
     </header>
 
@@ -103,8 +103,24 @@
           </div>
           <div class="card-body">
             <p>Tokens Purchased: <span id="tokens-purchased">0</span> ECT</p>
-            <p>Claim Tokens After: <span id="claim-time">TBD</span></p>
-            <button id="claim-tokens" class="btn btn-outline-primary" disabled>Claim Tokens</button>
+            <div class="claim-section mb-4">
+              <h4>Token Claiming</h4>
+              <div class="card p-3 border">
+                <div class="row mb-2">
+                  <div class="col-md-6">
+                    <p class="mb-1">Time until claiming available:</p>
+                    <p id="claim-time" class="fw-bold">Loading...</p>
+                  </div>
+                  <div class="col-md-6">
+                    <p class="mb-1">Status:</p>
+                    <p id="claim-status" class="text-warning fw-bold">Checking claim status...</p>
+                  </div>
+                </div>
+                <div class="d-grid">
+                  <button id="claim-tokens" class="btn btn-secondary" disabled>Claim Tokens</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

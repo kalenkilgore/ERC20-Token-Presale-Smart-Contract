@@ -5,9 +5,8 @@ async function main() {
   const ECT = await ethers.getContractFactory("ECT");
   const ectContract = await ECT.attach("0xCE3594098e2b5Fc930Faf7bb72fbEBBc1eceDc51");
   
-  // Get the address of your deployed PresaleTest contract - replace with your actual address
-  // after you deploy the PresaleTest contract
-  const presaleTestAddress = "0x34A918bD50fA87A4b6467b80f4c35f3Ed2D01885"; // Your deployed PresaleTest address
+  // Use your CURRENT presale test address - this is the updated one
+  const presaleTestAddress = "0x0b3AA82f654fF8023017e6650fFE4F3560d19934";
   
   const PresaleTest = await ethers.getContractFactory("PresaleTest");
   const presaleTestContract = await PresaleTest.attach(presaleTestAddress);
