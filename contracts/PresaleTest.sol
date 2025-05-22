@@ -10,6 +10,16 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./ECT.sol";
 
+interface AggregatorV3Interface {
+    function latestRoundData() external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+}
+
 /**
  * @title PresaleTest contract
  * @notice Create and manage presales of ECT token (test version with time checks disabled)
@@ -86,6 +96,9 @@ contract PresaleTest is Pausable, ReentrancyGuard {
 
     /// @dev Tracks early investors
     mapping(address => bool) private earlyInvestorsMapping;
+
+    /// @dev ETH/USD price feed on Sepolia
+    AggregatorV3Interface public immutable ethUsdPriceFeed;
 
     /**
      * @dev event for token is bought
@@ -212,6 +225,9 @@ contract PresaleTest is Pausable, ReentrancyGuard {
             presaleSupply
         ];
         prices = [80, 100, 120, 140]; // token price has 6 decimals.
+
+        // ETH/USD price feed on Sepolia
+        ethUsdPriceFeed = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
     }
 
     /**
@@ -411,21 +427,18 @@ contract PresaleTest is Pausable, ReentrancyGuard {
      */
     function claim(
         address investor
-    ) external nonReentrant returns (bool) {
-        // COMMENTED OUT FOR TESTING:
-        // require(
-        //     block.timestamp >= claimTime,
-        //     "Claim time is not reached yet."
-        // );
-        require(investorTokenBalance[investor] > 0, "No tokens to claim");
-
-        uint256 _tokenAmount = investorTokenBalance[investor];
+    ) external whenNotPaused nonReentrant {
+        // For testing purposes, remove the time check
+        // require(block.timestamp >= claimTime, "Claiming not started yet");
+        
+        uint256 tokenAmount = investorTokenBalance[investor];
+        require(tokenAmount > 0, "No tokens to claim");
+        
+        // Transfer tokens to the investor
         investorTokenBalance[investor] = 0;
-
-        SafeERC20.safeTransfer(token, investor, _tokenAmount);
-
-        emit TokensClaimed(investor, _tokenAmount);
-        return true;
+        SafeERC20.safeTransfer(IERC20(address(token)), investor, tokenAmount);
+        
+        emit TokensClaimed(investor, tokenAmount);
     }
 
     /**
@@ -433,16 +446,10 @@ contract PresaleTest is Pausable, ReentrancyGuard {
      * @param claimTime_ Presale claim time
      */
     function setClaimTime(uint256 claimTime_) external onlyOwner {
-        require(
-            claimTime_ > block.timestamp,
-            "Claim time cannot be in past."
-        );
-        require(claimTime_ > endTime, "Claim time must be after presale end");
-
-        uint256 _previousClaimTime = claimTime;
+        require(claimTime_ > block.timestamp, "Claim time must be in the future");
+        uint256 oldClaimTime = claimTime;
         claimTime = claimTime_;
-
-        emit ClaimTimeUpdated(_previousClaimTime, claimTime_);
+        emit ClaimTimeUpdated(oldClaimTime, claimTime_);
     }
 
     /**
@@ -778,6 +785,105 @@ contract PresaleTest is Pausable, ReentrancyGuard {
      */
     function getOwner() public view returns (address) {
         return _owner;
+    }
+
+    /**
+     * @dev Buy tokens with ETH and ensure user gets exactly the requested token amount
+     * @param tokenAmount_ The exact number of tokens the user wants to buy
+     */
+    function buyWithETHForExactTokens(uint256 tokenAmount_) 
+        external 
+        payable 
+        checkSaleState(tokenAmount_) 
+        whenNotPaused 
+        nonReentrant 
+    {
+        // Calculate required ETH amount
+        uint256 requiredEthAmount = estimatedEthAmountForTokenAmount(tokenAmount_);
+        
+        // Check if enough ETH was sent
+        require(msg.value >= requiredEthAmount, "Insufficient ETH sent");
+        
+        // Track investor and token amount
+        investorTokenBalance[msg.sender] += tokenAmount_;
+        
+        // Update total tokens sold
+        totalTokensSold += tokenAmount_;
+        
+        // Get ETH/USD price from Chainlink (returns with 8 decimals)
+        uint256 ethUsdPrice = getEthUsdPrice();
+        
+        // Convert ETH amount to USD value (ethUsdPrice has 8 decimals)
+        // requiredEthAmount has 18 decimals, we want 6 decimals for USDT
+        // 18 + 8 - 6 = 20 decimals to divide by
+        uint256 usdtEquivalent = (requiredEthAmount * ethUsdPrice) / 1e20;
+        
+        // Update funds raised with the USDT equivalent
+        fundsRaised += usdtEquivalent;
+        
+        // Register investor if not already registered
+        if (investments[msg.sender][address(0)] == 0) {
+            if (investors.length == 0) {
+                investors.push(msg.sender);
+            } else {
+                bool _isExist = false;
+                for (uint i = 0; i < investors.length; i++) {
+                    if (investors[i] == msg.sender) {
+                        _isExist = true;
+                        break;
+                    }
+                }
+                if (!_isExist) {
+                    investors.push(msg.sender);
+                }
+            }
+        }
+        
+        // Record ETH investment
+        investments[msg.sender][address(0)] += requiredEthAmount;
+        
+        // Refund excess ETH if any
+        uint256 excess = msg.value - requiredEthAmount;
+        if (excess > 0) {
+            (bool success, ) = payable(msg.sender).call{value: excess}("");
+            require(success, "ETH refund failed");
+        }
+        
+        // Emit event
+        emit TokensBought(msg.sender, tokenAmount_, requiredEthAmount, block.timestamp);
+    }
+
+    /**
+     * @dev Helper function to get the ETH/USD price
+     */
+    function getEthUsdPrice() public view returns (uint256) {
+        (, int256 price, , , ) = ethUsdPriceFeed.latestRoundData();
+        // Chainlink price feeds for ETH/USD return price with 8 decimals
+        return uint256(price);
+    }
+
+    /**
+     * @dev Emergency claim function for testing (remove in production)
+     */
+    function debugClaim() external nonReentrant {
+        uint256 tokenAmount = investorTokenBalance[msg.sender];
+        require(tokenAmount > 0, "No tokens to claim");
+        
+        // Transfer tokens to the investor
+        investorTokenBalance[msg.sender] = 0;
+        SafeERC20.safeTransfer(IERC20(address(token)), msg.sender, tokenAmount);
+        
+        emit TokensClaimed(msg.sender, tokenAmount);
+    }
+
+    /**
+     * @dev Set the claim time for testing purposes (allows past timestamps)
+     * @param claimTime_ timestamp when tokens can be claimed
+     */
+    function setClaimTimeForTesting(uint256 claimTime_) external onlyOwner {
+        uint256 oldClaimTime = claimTime;
+        claimTime = claimTime_;
+        emit ClaimTimeUpdated(oldClaimTime, claimTime_);
     }
 
     receive() external payable {}
