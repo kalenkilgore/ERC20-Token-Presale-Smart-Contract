@@ -1,0 +1,100 @@
+ERC20 TOKEN PRESALE PLATFORM - DETAILED GUIDE
+=============================================
+
+OVERVIEW
+--------
+This platform lets you run an ERC20 token presale with accurate pricing using Chainlink oracles. Here's how everything works:
+
+SMART CONTRACT STRUCTURE
+-----------------------
+1. ECT Token Contract: The ERC20 token that will be sold during the presale
+2. Presale Contract: The main production contract with time validations
+3. PresaleTest Contract: A testing version with disabled time validations
+
+HOW THE PRESALE WORKS
+--------------------
+1. Token Pricing: Uses Chainlink oracle to get real-time ETH/USD price
+2. Tiered Pricing: Different token amounts have different prices
+3. Multiple Payment Options: ETH, USDT, USDC, and DAI
+4. Early Investor Bonus: Distributes unsold tokens to early investors
+
+SETUP AND DEPLOYMENT PROCESS
+---------------------------
+
+Step 1: Deploy the Token
+------------------------
+npx hardhat run scripts/deploy_ECT.js --network sepolia
+
+- Creates your ERC20 token with the total supply
+- Save the token address for the next step
+
+Step 2: Deploy the Presale Contract
+-----------------------------------
+For testing:
+npx hardhat run scripts/deploy_PresaleTest.ts --network sepolia
+
+For production:
+npx hardhat run scripts/deploy_Presale.ts --network sepolia
+
+- The test version has time validations disabled
+- The production version enforces time restrictions
+
+Step 3: Transfer Tokens to the Presale Contract
+----------------------------------------------
+npx hardhat run scripts/transfer-tokens.js --network sepolia  (for production)
+npx hardhat run scripts/transfer-tokens-test.js --network sepolia  (for testing)
+
+- Updates the contract address in the script first
+- Transfers 10% of tokens to the presale contract
+
+Step 4: For Testing Only - Set Claim Time
+----------------------------------------
+npx hardhat run scripts/set-claim-time.js --network sepolia
+
+- Only works with PresaleTest
+- Sets claim time to 24 hours ago so you can test claiming
+
+HOW USERS INTERACT WITH THE PRESALE
+----------------------------------
+1. Buy Tokens:
+   - Users send ETH or stablecoins to the contract
+   - The contract calculates token amount based on current price
+   - Tokens are reserved for the user
+
+2. Claim Tokens:
+   - After the claim time, users call the claim function
+   - Their tokens are transferred to their wallet
+
+CONTRACT KEY FUNCTIONS
+--------------------
+- buyTokensWithETH(): Buy tokens by sending ETH
+- buyTokensWithCoin(): Buy tokens with stablecoins
+- claimTokens(): Get your purchased tokens after claim time
+- estimatedTokenAmountAvailableWithETH(): Calculate how many tokens you'll get for a specific ETH amount
+
+SPECIAL TESTING FUNCTIONS (PresaleTest only)
+------------------------------------------
+- debugClaim(): Bypass time restrictions to claim tokens
+- setClaimTimeForTesting(): Change the claim time for testing
+
+CONNECTING THE FRONTEND
+---------------------
+1. Update the contract addresses in js/app.js
+2. Run the frontend using npx serve
+3. Connect your wallet and interact with the presale
+
+WITHDRAWING FUNDS
+---------------
+After the presale completes:
+npx hardhat run scripts/withdraw-eth-fund.js --network sepolia
+
+- Transfers ETH from the contract to the owner's wallet
+
+KEY DIFFERENCES BETWEEN TEST AND PRODUCTION
+-----------------------------------------
+- PresaleTest: Time validations are commented out, uses near-future timestamps
+- Presale: All validations active, uses far-future timestamps (2025)
+- PresaleTest: Has debugging functions like debugClaim()
+- PresaleTest: Can set claim time to the past for easier testing
+
+That's everything you need to know to deploy and use this presale platform! 

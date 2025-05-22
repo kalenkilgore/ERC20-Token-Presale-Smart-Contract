@@ -32,7 +32,7 @@ We've built a complete user interface that makes interacting with the presale co
 
 The front end is live here: [https://kalenkilgore.github.io/ERC20-Token-Presale-Smart-Contract/](https://kalenkilgore.github.io/ERC20-Token-Presale-Smart-Contract/)
 
-# INSTRUCTIONS:
+# INSTRUCTIONS (on ubuntu):
 
 1. Clone the repository
 2. Install dependencies: `npm install`
